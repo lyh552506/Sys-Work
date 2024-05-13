@@ -1,0 +1,4 @@
+.vscode/
+.cache/
+build/
+cuda_12.4.0_550.54.14_linux.run

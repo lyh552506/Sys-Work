@@ -1,0 +1,1 @@
+gcc -o product product.c && gcc -o consume consume.c
