@@ -21,8 +21,8 @@ void FileToFile(char *src, char *dst) {
   }
   int fd_dst = open(dst, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
   int fd_src = open(src, O_RDONLY);
-  ssize_t bufread=0;
-  while((bufread=read(fd_src,buff,sizeof(buff)))>0){
+  ssize_t bufread = 0;
+  while ((bufread = read(fd_src, buff, sizeof(buff))) > 0) {
     write(fd_dst, buff, bufread);
   }
   close(fd_dst);
@@ -30,17 +30,18 @@ void FileToFile(char *src, char *dst) {
 }
 
 void DirToDir(char *src, char *dst) {
-  DIR* dir=NULL;
-  struct dirent* read;
-  if((dir=opendir(src))==NULL){
+  DIR *dir = NULL;
+  struct dirent *read;
+  if ((dir = opendir(src)) == NULL) {
     printf("cp: cannot stat '%s': No such file or directory", src);
     exit(0);
   }
-  while((read = readdir(dir)) != NULL){
-    char *name=read->d_name;
-    char file_path[1024];
-    snprintf(file_path, sizeof(file_path), src, name);
-
+  while ((read = readdir(dir)) != NULL) {
+    char *name = read->d_name;
+    char file_src_path[1024], file_dst_path[1024];
+    sprintf(file_src_path, "%s%s%s", src, "/", name);
+    sprintf(file_dst_path, "%s%s%s", dst, "/", name);
+    FileToFile(file_src_path, file_dst_path);
   }
 }
 
