@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <cstdlib>
 #include <dirent.h>
 #include <fcntl.h>
 #include <grp.h>
@@ -23,14 +24,15 @@ void FileToFile(char *src, char *dst) {
     exit(0);
   }
   if (access(dst, F_OK) != -1) {
-    printf("current dst has same dst %s, Should We Cover? [Y/N]\n", dst);
+    printf("current dst has same name: %s, Should We Cover? [Y/N]\n", dst);
     scanf("%c", &choice);
     getchar();
     if (choice == 'Y' || choice == 'y')
       IsCover = true;
     else if (choice == 'N' || choice == 'n') {
-      printf(" Should We Cat two files? [Y/N]\n");
+      printf("Should We Cat two files? [Y/N]\n");
       scanf("%c", &choice);
+      getchar();
       if (choice == 'Y' || choice == 'y')
         IsCat = true;
       else if (choice == 'N' || choice == 'n') {
@@ -79,13 +81,25 @@ void FileToFile(char *src, char *dst) {
 
 void DirToDir(char *src, char *dst) {
   DIR *dir = NULL, *subdir = NULL;
-  struct dirent *read;
+  struct dirent *read=NULL;
+  struct stat* st=NULL;
   if ((dir = opendir(src)) == NULL) {
     printf("cp: cannot stat '%s': No such file or directory", src);
     exit(0);
   }
+  if(access(dst, F_OK)==-1){
+    mkdir(dst, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  }
+  if (stat(dst,st)!=-1) {
+    if(S_ISREG(st->st_mode)){
+      perror("dest is a file!");
+      exit(0);
+    }
+  }
   while ((read = readdir(dir)) != NULL) {
     char *name = read->d_name;
+    if(name[0]=='.')
+      continue;
     char file_src_path[1024], file_dst_path[1024];
     sprintf(file_src_path, "%s%s%s", src, "/", name);
     sprintf(file_dst_path, "%s%s%s", dst, "/", name);
