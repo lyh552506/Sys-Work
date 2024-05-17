@@ -15,7 +15,7 @@
 #include <unistd.h>
 #define MAX 100
 
-void FileToFile(char *src, char *dst) {
+void ToFile(char *src, char *dst) {
   char buff[512];
   char choice;
   bool IsCover = false, IsCat = false, Drop = false;
@@ -55,7 +55,7 @@ void FileToFile(char *src, char *dst) {
     close(fd_dst);
     close(fd_src);
   } else if (IsCover && !IsCat && !Drop) {
-    int fd_dst = open(dst, O_CREAT | O_WRONLY|O_TRUNC);
+    int fd_dst = open(dst, O_CREAT | O_WRONLY | O_TRUNC);
     int fd_src = open(src, O_RDONLY);
     ssize_t bufread = 0;
     while ((bufread = read(fd_src, buff, sizeof(buff))) > 0) {
@@ -64,7 +64,7 @@ void FileToFile(char *src, char *dst) {
     close(fd_dst);
     close(fd_src);
   } else if (!IsCover && IsCat && !Drop) {
-    int fd_dst = open(dst, O_WRONLY|O_APPEND);
+    int fd_dst = open(dst, O_WRONLY | O_APPEND);
     int fd_src = open(src, O_RDONLY);
     ssize_t bufread = 0;
     while ((bufread = read(fd_src, buff, sizeof(buff))) > 0) {
@@ -81,24 +81,24 @@ void FileToFile(char *src, char *dst) {
 
 void DirToDir(char *src, char *dst) {
   DIR *dir = NULL, *subdir = NULL;
-  struct dirent *read=NULL;
-  struct stat* st=NULL;
+  struct dirent *read = NULL;
+  struct stat *st = NULL;
   if ((dir = opendir(src)) == NULL) {
     printf("cp: cannot stat '%s': No such file or directory", src);
     exit(0);
   }
-  if(access(dst, F_OK)==-1){
+  if (access(dst, F_OK) == -1) {
     mkdir(dst, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   }
-  if (stat(dst,st)!=-1) {
-    if(S_ISREG(st->st_mode)){
+  if (stat(dst, st) != -1) {
+    if (S_ISREG(st->st_mode)) {
       perror("dest is a file!");
       exit(0);
     }
   }
   while ((read = readdir(dir)) != NULL) {
     char *name = read->d_name;
-    if(name[0]=='.')
+    if (name[0] == '.')
       continue;
     char file_src_path[1024], file_dst_path[1024];
     sprintf(file_src_path, "%s%s%s", src, "/", name);
@@ -107,7 +107,7 @@ void DirToDir(char *src, char *dst) {
       DirToDir(file_src_path, file_dst_path);
       continue;
     }
-    FileToFile(file_src_path, file_dst_path);
+    ToFile(file_src_path, file_dst_path);
   }
 }
 
@@ -131,9 +131,15 @@ int main(int argc, char *argv[]) {
   }
   memcpy(src, argv[argc - 2], strlen(argv[argc - 2]));
   memcpy(dst, argv[argc - 1], strlen(argv[argc - 1]));
-  if (opendir(src) != NULL) {
+  if (opendir(src) != NULL && recursive == true) {
     DirToDir(src, dst);
+  } else if (opendir(src) == NULL && opendir(dst) != NULL) {
+     const char *file_name = strrchr(src, '/');
+     if(file_name){
+      sprintf(dst, "%s%s%s", dst,"/",file_name);
+      ToFile(src, dst);
+     }
   } else {
-    FileToFile(src, dst);
+    ToFile(src, dst);
   }
 }
