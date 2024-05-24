@@ -1,4 +1,3 @@
-#include <ctime>
 #include <dirent.h>
 #include <grp.h>
 #include <pwd.h>
@@ -21,7 +20,7 @@ typedef struct File {
   off_t size;          //文件大小
   nlink_t links;       //文件硬链接数或目录子目录数
   char type[10];       //文件类型
-  bool IsSymLink=true;
+  bool IsSymLink = true;
   void show() {
     printf("%s\t%ld\t%s\t%s\t%ld\t%s\t%s\n", type, links, user, belong, size,
            last_time, name);
@@ -75,12 +74,12 @@ void decode_time(file *f, time_t time) {
   memcpy(f->last_time, ti, sizeof(ti));
 }
 
-void decode_name(file *f, char *name,char* pwd) {
+void decode_name(file *f, char *name, char *pwd) {
   memcpy(f->name, name, strlen(name));
-  if(f->IsSymLink){
-    char tmp[100]={0};
-    ssize_t len=readlink(pwd, tmp, sizeof(tmp)-1);
-    if(len!=-1){
+  if (f->IsSymLink) {
+    char tmp[100] = {0};
+    ssize_t len = readlink(pwd, tmp, sizeof(tmp) - 1);
+    if (len != -1) {
       strcat(f->name, " -> ");
       strcat(f->name, tmp);
     }
@@ -96,9 +95,11 @@ int main(int argc, char *argv[]) {
   bool flag_a = false, flag_l = false, flag_L = false;
   DIR *dir = NULL;
   struct dirent *read = NULL;
-  if (getcwd(cwd, sizeof(cwd)) == NULL) {
+  if (argc == 1 && getcwd(cwd, sizeof(cwd)) == NULL) {
     perror("getwpd");
     return -1;
+  } else if (argc > 1) {
+    memcpy(cwd, argv[1], strlen(argv[1])+1);
   }
   if ((dir = opendir(cwd)) == NULL) {
     perror("opendir");
@@ -117,7 +118,7 @@ int main(int argc, char *argv[]) {
       break;
     case '?':
       perror("unknown option!");
-      return -1;
+      // return -1;
     }
   }
   // equal to: ls
@@ -135,7 +136,7 @@ int main(int argc, char *argv[]) {
     while ((read = readdir(dir)) != NULL) {
       bool isLink = false;
       char pwd[SIZE];
-      f->IsSymLink=true;
+      f->IsSymLink = true;
       if (read->d_name[0] == '.')
         continue;
       struct stat *buf = (struct stat *)malloc(sizeof(struct stat));
@@ -145,8 +146,8 @@ int main(int argc, char *argv[]) {
       strcat(pwd, read->d_name);
       //获取stat状态
       lstat(pwd, buf);
-      if (!flag_L || !S_ISLNK(buf->st_mode)){
-        f->IsSymLink=false;
+      if (!flag_L || !S_ISLNK(buf->st_mode)) {
+        f->IsSymLink = false;
         stat(pwd, buf);
       }
       //获取type
@@ -155,7 +156,7 @@ int main(int argc, char *argv[]) {
       decode_fileSize(f, buf->st_size);
       decode_userName(f, buf->st_uid, buf->st_gid);
       decode_time(f, buf->st_mtime);
-      decode_name(f, read->d_name,pwd);
+      decode_name(f, read->d_name, pwd);
       total += buf->st_size;
       free(buf);
       f->show();
@@ -170,7 +171,7 @@ int main(int argc, char *argv[]) {
     while ((read = readdir(dir)) != NULL) {
       bool isLink = false;
       char pwd[SIZE];
-      f->IsSymLink=true;
+      f->IsSymLink = true;
       struct stat *buf = (struct stat *)malloc(sizeof(struct stat));
       //获取文件的绝对地址
       memcpy(pwd, cwd, sizeof(cwd));
@@ -178,9 +179,9 @@ int main(int argc, char *argv[]) {
       strcat(pwd, read->d_name);
       //获取stat状态
       lstat(pwd, buf);
-      if (!flag_L || !S_ISLNK(buf->st_mode)){
+      if (!flag_L || !S_ISLNK(buf->st_mode)) {
         stat(pwd, buf);
-        f->IsSymLink=false;
+        f->IsSymLink = false;
       }
       //获取type
       decode_type(f, buf->st_mode);
@@ -188,7 +189,7 @@ int main(int argc, char *argv[]) {
       decode_fileSize(f, buf->st_size);
       decode_userName(f, buf->st_uid, buf->st_gid);
       decode_time(f, buf->st_mtime);
-      decode_name(f, read->d_name,pwd);
+      decode_name(f, read->d_name, pwd);
       total += buf->st_size;
       free(buf);
       f->show();

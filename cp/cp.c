@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <cstdlib>
 #include <dirent.h>
 #include <fcntl.h>
 #include <grp.h>
@@ -23,7 +22,7 @@ void ToFile(char *src, char *dst) {
     printf("cp: cannot stat '%s': No such file or directory", src);
     exit(0);
   }
-  if (access(dst, F_OK) != -1) {
+  if (access(dst, W_OK) != -1) {
     printf("current dst has same name: %s, Should We Cover? [Y/N]\n", dst);
     scanf("%c", &choice);
     getchar();
@@ -47,7 +46,15 @@ void ToFile(char *src, char *dst) {
   }
   if (!IsCover && !IsCat && !Drop) {
     int fd_dst = open(dst, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+    if (fd_dst == -1) {
+      perror("fd");
+      exit(0);
+    }
     int fd_src = open(src, O_RDONLY);
+    if (fd_src == -1) {
+      perror("fd");
+      exit(0);
+    }
     ssize_t bufread = 0;
     while ((bufread = read(fd_src, buff, sizeof(buff))) > 0) {
       write(fd_dst, buff, bufread);
@@ -87,7 +94,7 @@ void DirToDir(char *src, char *dst) {
     printf("cp: cannot stat '%s': No such file or directory", src);
     exit(0);
   }
-  if (access(dst, F_OK) == -1) {
+  if (access(dst, W_OK) == -1) {
     mkdir(dst, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   }
   if (stat(dst, st) != -1) {
@@ -116,8 +123,11 @@ int main(int argc, char *argv[]) {
   char src[MAX] = {0};
   char dst[MAX] = {0};
   bool recursive = false, IsDir = false; //是否递归复制
-  if (argc < 3) {
+  if (argc < 2) {
+    for (int i = 0; i < argc; i++)
+      printf("%s\n", argv[i]);
     perror("errer: at least tow argues");
+    return 0;
   }
   while ((option = getopt(argc, argv, "r")) != -1) {
     switch (option) {
@@ -134,11 +144,11 @@ int main(int argc, char *argv[]) {
   if (opendir(src) != NULL && recursive == true) {
     DirToDir(src, dst);
   } else if (opendir(src) == NULL && opendir(dst) != NULL) {
-     const char *file_name = strrchr(src, '/');
-     if(file_name){
-      sprintf(dst, "%s%s%s", dst,"/",file_name);
+    const char *file_name = strrchr(src, '/');
+    if (file_name) {
+      sprintf(dst, "%s%s", dst, file_name);
       ToFile(src, dst);
-     }
+    }
   } else {
     ToFile(src, dst);
   }
